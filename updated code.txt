@@ -1,0 +1,378 @@
+/*************************************************************
+@Name: APTS_BundleFreight_Controller 
+@Author: Lalitha Sagarika Adduru (lalitha.adduru@forsysinc.com)
+@CreateDate: 3rd September 2018
+@Description: Controller class for VF page APTS_BundleFreightConfiguration
+that allows the user to Configure freight manually
+@CodeCoverage: 96%
+******************************************************************/
+public class APTS_BundleFreight_Controller 
+{
+    public Id cartId{set;get;}
+    public List<Apttus_Config2__LineItem__c> lineItems{get;set;}
+    public List<Apttus_Config2__LineItem__c> mainLineItems{get;set;}
+    public List<Apttus_Config2__LineItem__c> originalMainLineItems{get;set;}
+    public List<Apttus_Config2__LineItem__c> freightLineItem{get;set;}
+    public Map<Id, Apttus_Config2__ProductAttributeValue__c> prodAttrValuesMap{set;get;}
+    public Map<Id, Decimal> lineItemToOptionWeightRollup{set;get;}
+    public string serializedMainLineItems{get;set;}
+    public Id shipToLocation{get;set;}
+    public Map<String, Decimal> freightChargeValues{get;set;}
+    public String serializedFreightCharges{get;set;}
+    public String profileType{get;set;}
+    public String quoteId{get;set;}
+    public String cartStatus{get;set;}
+    public String tempObjId{get;set;}
+    
+    public List<Apttus_Config2__ProductAttributeValue__c>prodattr{get;set;}
+     public List<Apttus_Config2__ProductAttributeValue__c>prodattrlist{get;set;}
+    
+    public APTS_BundleFreight_Controller()
+    {
+        cartId = ApexPages.currentPage().getParameters().get('id');
+        tempObjId = ApexPages.currentPage().getParameters().get('configRequestId');
+        prodAttrValuesMap = new Map<Id, Apttus_Config2__ProductAttributeValue__c>();
+        mainLineItems = new List<Apttus_Config2__LineItem__c>();
+        originalMainLineItems = new List<Apttus_Config2__LineItem__c>();
+        freightLineItem = new List<Apttus_Config2__LineItem__c>();
+        lineItemToOptionWeightRollup = new Map<Id, Decimal>();
+        
+        prodattr =[select id,APTS_Charge_Per_Truck__c,APTS_FlatBedCharge__c,APTS_OverWeightLoadPricePerTruck__c,APTS_WideLoadPricePerTruck__c,APTS_ChargePerSpecialTruck__c,
+        APTS_BoomTruckCharge__c,APT_5TonCharge__c,APTS_SettingPerHour__c,APTS_NightWeekendPricePerTruck__c,APTS_PilotCarPricePerTruck__c,APTS_StandByPrice__c
+           from Apttus_Config2__ProductAttributeValue__c];
+        
+        lineItems = [
+            select id, Apttus_Config2__ConfigurationId__c, Apttus_Config2__LineType__c, Apttus_Config2__PrimaryLineNumber__c,
+            Apttus_Config2__ListPrice__c,
+            Apttus_Config2__LineNumber__c,
+            Apttus_Config2__ParentBundleNumber__c, 
+            Apttus_Config2__ProductId__r.Name,
+            APTS_Total_Weight__c,
+            APTS_BundleFreightPrice__c,
+            APTS_Freight_Extended_Weight__c,
+            Apttus_Config2__ConfigurationId__r.Apttus_QPConfig__Proposald__c,
+            Apttus_Config2__ConfigurationId__r.Apttus_Config2__Status__c,
+            Apttus_Config2__Quantity__c,
+            APTS_PilotCar__c,
+            APTS_Standbyhours__c,
+            Apttus_Config2__LineSequence__c,
+            APTS_WideLoad__c,
+            APTS_NightWeekend__c,
+            APTS_OverweightLoad__c,
+            APTS_BoomTrucks__c,
+            APTS_BoomTruckSettingHrs__c,
+            APTS_FlatBeds__c,
+            APTS_5Ton__c,
+            APTS_SpecialTrucks__c,
+            APTS_ChargePerSpecialTruck__c,
+            APTS_SpecialSettingHrs__c,
+            APTS_3rdPartyCrane__c,
+            APTS_CraneTypeSize__c,
+            APTS_ChargePerCrane__c,
+            Apttus_Config2__AttributeValueId__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Boom_Trucks__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Flat_Beds__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Total_Weight__c,
+            Apttus_Config2__AttributeValueId__r.APTS_5_Ton__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Boom_Truck_Setting_Hours__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Special_Setting_Hours__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Pilot_Car__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Stand_by_Hours__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Recommended_Trucks__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Over_Weight_Load__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Wide_Load__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Charge_Per_Truck__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Type_Size__c ,
+            Apttus_Config2__AttributeValueId__r.APTS_No_of_Cranes__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Charge_Per_Crane__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Night_Weekend__c,
+            Apttus_Config2__AttributeValueId__r.APTS_Special__c,
+            Apttus_Config2__PriceListItemId__c,
+            Apttus_Config2__PriceListItemId__r.APTS_PilotCarPricePerTruck__c,
+            Apttus_Config2__PriceListItemId__r.APTS_WideLoadPricePerTruck__c,
+            Apttus_Config2__PriceListItemId__r.APTS_SettingPricePerHour__c,
+            Apttus_Config2__PriceListItemId__r.APTS_StandbyPricePerHour__c,
+            Apttus_Config2__PriceListItemId__r.APTS_NightWeekendPricePerTruck__c,
+            Apttus_Config2__PriceListItemId__r.APTS_OverWeightLoadPricePerTruck__c
+            from Apttus_Config2__LineItem__c where Apttus_Config2__ConfigurationId__c = :cartId 
+            and Apttus_Config2__LineType__c = 'Product/Service'
+            and Apttus_Config2__ProductId__r.APTS_Apttus_Product_Type__c != 'Contract Bundle'
+            ORDER By Apttus_Config2__LineSequence__c
+        ];
+        
+        Map<Decimal, List<Apttus_Config2__LineItem__c>> prodServiceToOptionMap = APTS_ProductConfigurationUtilities.fetchProductServiceToOptionMap(new Apttus_Config2__ProductConfiguration__c(Id=cartId));
+        for(Apttus_Config2__LineItem__c lineItem : lineItems)
+        {
+            cartStatus = lineItem.Apttus_Config2__ConfigurationId__r.Apttus_Config2__Status__c;
+            Decimal extendedWeightRollup = 0;
+            if(prodServiceToOptionMap.get(lineItem.Apttus_Config2__LineNumber__c) != null)
+            {
+                for(Apttus_Config2__LineItem__c optionLineItem : prodServiceToOptionMap.get(lineItem.Apttus_Config2__LineNumber__c))
+                {
+                    extendedWeightRollup += optionLineItem.APTS_Freight_Extended_Weight__c;
+                }
+            }
+            extendedWeightRollup += lineItem.APTS_Freight_Extended_Weight__c == null ? 0 : lineitem.APTS_Freight_Extended_Weight__c;
+            lineItemToOptionWeightRollup.put(lineItem.Id, extendedWeightRollup);
+            if(lineItem.Apttus_Config2__ProductId__r.Name != 'Freight' && lineItem.Apttus_Config2__LineType__c == 'Product/Service')
+            {
+                originalMainLineItems.add(lineItem.clone(true, true, false, false));
+                String prodName = lineItem.Apttus_Config2__ProductId__r.Name;
+                //lineItem.Apttus_Config2__ProductId__r.Name = '"'+prodName+'"';
+                //prodName = String.escapeSingleQuotes(prodName);
+                prodName = prodName.replace('"', '\\"');
+                lineItem.Apttus_Config2__ProductId__r.Name = prodName;
+                system.debug('prodname  -- > '+prodName);
+                mainLineItems.add(lineItem);
+                system.debug('mainLineItemsconst-- > '+mainLineItems);
+                
+            }
+            if(lineItem.Apttus_Config2__ProductId__r.Name == 'Freight')
+            {
+               freightLineItem.add(lineItem); 
+            }
+            if(lineItem.Apttus_Config2__LineType__c == 'Product/Service' && lineitem.Apttus_Config2__AttributeValueId__c != null)
+            {
+                Apttus_Config2__ProductAttributeValue__c prodAttrValue = new Apttus_Config2__ProductAttributeValue__c(Id = lineItem.Apttus_Config2__AttributeValueId__c);
+                prodAttrValue.APTS_Boom_Trucks__c = lineItem.Apttus_Config2__AttributeValueId__r.APTS_Boom_Trucks__c;
+                prodAttrValue.APTS_Flat_Beds__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Flat_Beds__c;
+                prodAttrValue.APTS_5_Ton__c =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_5_Ton__c;
+                prodAttrValue.APTS_Boom_Truck_Setting_Hours__c =   lineItem.Apttus_Config2__AttributeValueId__r.APTS_Boom_Truck_Setting_Hours__c;
+                prodAttrValue.APTS_Special_Setting_Hours__c =   lineItem.Apttus_Config2__AttributeValueId__r.APTS_Special_Setting_Hours__c;
+                prodAttrValue.APTS_Pilot_Car__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Pilot_Car__c;
+                prodAttrValue.APTS_Stand_by_Hours__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Stand_by_Hours__c;
+                prodAttrValue.APTS_Over_Weight_Load__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Over_Weight_Load__c;
+                prodAttrValue.APTS_Wide_Load__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Wide_Load__c;
+                prodAttrValue.APTS_Charge_Per_Truck__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Charge_Per_Truck__c;
+                prodAttrValue.APTS_Type_Size__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Type_Size__c;
+                prodAttrValue.APTS_No_of_Cranes__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_No_of_Cranes__c;
+                prodAttrValue.APTS_Charge_Per_Crane__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Charge_Per_Crane__c;
+                prodAttrValue.APTS_Night_Weekend__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Night_Weekend__c;
+                prodAttrValue.APTS_Special__c  =  lineItem.Apttus_Config2__AttributeValueId__r.APTS_Special__c;
+                prodAttrValuesMap.put(lineitem.Apttus_Config2__AttributeValueId__c, prodAttrValue);
+            }
+        }
+        system.debug('mainLineItem  -- > '+mainLineItems);
+        if(!lineItems.isEmpty())
+        {
+            Apttus_Proposal__Proposal__c quote = [
+                SELECT Id, APTS_Ship_to_Location__c, Apttus_QPConfig__PriceListId__r.Name, APTS_Profile_Type__c
+                FROM Apttus_Proposal__Proposal__c
+                WHERE Id = :lineItems[0].Apttus_Config2__ConfigurationId__r.Apttus_QPConfig__Proposald__c
+            ];
+            shipToLocation = quote.APTS_Ship_to_Location__c;
+            profileType = quote.APTS_Profile_Type__c;
+            quoteId = quote.Id;
+            serializedMainLineItems = json.serialize(mainLineItems);
+            serializedMainLineItems = String.escapeSingleQuotes(serializedMainLineItems);
+            freightChargeValues = fetchFreightAttrCharges(quote.APTS_Ship_to_Location__c, freightLineItem.isEmpty() ? null : freightLineItem[0]);
+            serializedFreightCharges = JSON.serialize(freightChargeValues);
+            system.debug('serializedFreightCharges:-->'+JSON.deserializeUntyped(serializedFreightCharges));
+        }
+        
+    }
+    
+    public static Map<String, Decimal> fetchFreightAttrCharges(Id shipToLocation, Apttus_Config2__LineItem__c freightLineItem)
+    {
+        Map<String, Decimal> freightAttrToCharge = new Map<String, Decimal>();
+        if(shipToLocation != null)
+        {
+            List<Location__c> shippingLocation = [
+                SELECT Id, APTS_Location_Territory__c, APTS_Location_Region__c
+                FROM Location__c
+                WHERE Id = :shipToLocation //AND APTS_Location_Region__c = :quote.APTS_Items_Shipped_From_New__c
+            ];
+            if(!shippingLocation.isEmpty())
+            {
+                String region = shippingLocation[0].APTS_Location_Region__c;
+                String zone = shippingLocation[0].APTS_Location_Territory__c;
+                
+                List<APTS_Charge_Per_Truck__c> truckCharges = [
+                    SELECT Id, APTS_Charge_Per_Truck__c, APTS_Truck_Type__c
+                    FROM APTS_Charge_Per_Truck__c
+                    WHERE APTS_Region__c = :region AND APTS_Zone__c =:zone
+                ];
+                
+                for(APTS_Charge_Per_Truck__c truckCharge : truckCharges)
+                {
+                    if(truckCharge.APTS_Truck_Type__c != null)
+                    {
+                        String truckTypeWithoutSpaces = String.valueOf(truckCharge.APTS_Truck_Type__c).remove(' ');
+                        truckTypeWithoutSpaces = truckTypeWithoutSpaces == '5Ton' ? 'FiveTon' : truckTypeWithoutSpaces;
+                        freightAttrToCharge.put(truckTypeWithoutSpaces, truckCharge.APTS_Charge_Per_Truck__c);
+                    }
+                    
+                }
+            }
+        }
+        
+       
+        
+        
+        if(freightLineItem != null)
+        {
+            freightAttrToCharge.put('PilotCar', freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_PilotCarPricePerTruck__c);
+            freightAttrToCharge.put('StandByHours', freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_StandbyPricePerHour__c);
+            freightAttrToCharge.put('WideLoad',freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_WideLoadPricePerTruck__c);
+            freightAttrToCharge.put('Overweight',freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_OverWeightLoadPricePerTruck__c);
+            freightAttrToCharge.put('NightWeekend',freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_NightWeekendPricePerTruck__c);
+            freightAttrToCharge.put('WideLoad',freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_WideLoadPricePerTruck__c);  
+            freightAttrToCharge.put('SettingHoursBoomTruck', freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_SettingPricePerHour__c);
+            freightAttrToCharge.put('SpecialSettingHours', freightLineItem.Apttus_Config2__PriceListItemId__r.APTS_SettingPricePerHour__c);
+        }
+        return freightAttrToCharge;
+        
+      //adding all line items to the list
+    
+    }
+
+    public PageReference updateLineItems()
+    {
+        Boolean flag = true;
+       List<Apttus_Config2__LineItem__c> alllineitems = new List<Apttus_Config2__LineItem__c>();
+        if(freightLineItem != null && !freightLineItem.isEmpty())
+        {
+            //Adding logic to capture and store Charges per truck type on line item - Vineeth Raj | 18/02/2020
+            if(serializedFreightCharges != NULL){
+                Map<String,Object> chargeMap = (Map<String,Object>)JSON.deserializeUntyped(serializedFreightCharges);
+                system.debug(chargeMap);
+                if(!chargeMap.isEmpty()){
+                    freightLineItem[0].APTS_BoomTruckCharge__c = chargeMap.containsKey('BoomTruck') && Decimal.valueOf(String.valueOf(chargeMap.get('BoomTruck'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('BoomTruck'))) : 0;
+                    freightLineItem[0].APTS_FlatBedCharge__c = chargeMap.containsKey('FlatBed') && Decimal.valueOf(String.valueOf(chargeMap.get('FlatBed'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('FlatBed'))) : 0;
+                    freightLineItem[0].APT_5TonCharge__c = chargeMap.containsKey('FiveTon') && Decimal.valueOf(String.valueOf(chargeMap.get('FiveTon'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('FiveTon'))) : 0;
+                    freightLineItem[0].APTS_SettingPerHour__c = chargeMap.containsKey('SettingHoursBoomTruck') && Decimal.valueOf(String.valueOf(chargeMap.get('SettingHoursBoomTruck'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('SettingHoursBoomTruck'))) : 0;
+                    freightLineItem[0].APTS_StandByPrice__c = chargeMap.containsKey('StandByHours') && Decimal.valueOf(String.valueOf(chargeMap.get('StandByHours')))!= NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('StandByHours'))) : 0;
+                    freightLineItem[0].APTS_PilotCarPricePerTruck__c = chargeMap.containsKey('PilotCar') && Decimal.valueOf(String.valueOf(chargeMap.get('PilotCar'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('PilotCar'))) : 0;
+                    freightLineItem[0].APTS_NightWeekendPricePerTruck__c = chargeMap.containsKey('NightWeekend') && Decimal.valueOf(String.valueOf(chargeMap.get('NightWeekend'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('NightWeekend'))) : 0;
+                    freightLineItem[0].APTS_OverWeightLoadPricePerTruck__c = chargeMap.containsKey('Overweight') && Decimal.valueOf(String.valueOf(chargeMap.get('Overweight'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('Overweight'))) : 0;
+                    freightLineItem[0].APTS_WideLoadPricePerTruck__c = chargeMap.containsKey('WideLoad') && Decimal.valueOf(String.valueOf(chargeMap.get('WideLoad'))) != NULL ? 
+                                                                Decimal.valueOf(String.valueOf(chargeMap.get('WideLoad'))) : 0;                  
+                    
+                    alllineitems.add(freightLineItem[0]);  
+                }
+                system.debug('alllineitemsFLI--->'+alllineitems);
+          
+            
+            //Logic to update Bundle and standalone with charges -Vineeth Raj 20-02-2020
+                for(Apttus_Config2__LineItem__c mli : mainLineItems  ){
+                
+                                mli.APTS_BoomTruckCharge__c = chargeMap.containsKey('BoomTruck') && Decimal.valueOf(String.valueOf(chargeMap.get('BoomTruck'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('BoomTruck'))) : 0;
+                                mli.APTS_FlatBedCharge__c = chargeMap.containsKey('FlatBed') && Decimal.valueOf(String.valueOf(chargeMap.get('FlatBed'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('FlatBed'))) : 0;
+                                mli.APT_5TonCharge__c = chargeMap.containsKey('FiveTon') && Decimal.valueOf(String.valueOf(chargeMap.get('FiveTon'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('FiveTon'))) : 0;
+                                mli.APTS_SettingPerHour__c = chargeMap.containsKey('SettingHoursBoomTruck') && Decimal.valueOf(String.valueOf(chargeMap.get('SettingHoursBoomTruck'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('SettingHoursBoomTruck'))) : 0;
+                                mli.APTS_StandByPrice__c = chargeMap.containsKey('StandByHours') && Decimal.valueOf(String.valueOf(chargeMap.get('StandByHours')))!= NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('StandByHours'))) : 0;
+                                mli.APTS_PilotCarPricePerTruck__c = chargeMap.containsKey('PilotCar') && Decimal.valueOf(String.valueOf(chargeMap.get('PilotCar'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('PilotCar'))) : 0;
+                                mli.APTS_NightWeekendPricePerTruck__c = chargeMap.containsKey('NightWeekend') && Decimal.valueOf(String.valueOf(chargeMap.get('NightWeekend'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('NightWeekend'))) : 0;
+                                mli.APTS_OverWeightLoadPricePerTruck__c = chargeMap.containsKey('Overweight') && Decimal.valueOf(String.valueOf(chargeMap.get('Overweight'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('Overweight'))) : 0;
+                                mli.APTS_WideLoadPricePerTruck__c = chargeMap.containsKey('WideLoad') && Decimal.valueOf(String.valueOf(chargeMap.get('WideLoad'))) != NULL ? 
+                                                                            Decimal.valueOf(String.valueOf(chargeMap.get('WideLoad'))) : 0;  
+                
+                    alllineitems.add(mli);
+                    system.debug('alllineitemsMLI--->'+alllineitems);
+                }
+  list<Apttus_Config2__LineItem__c> pli = [select id,Apttus_Config2__AttributeValueId__c ,APTS_BoomTruckCharge__c,APTS_FlatBedCharge__c,APT_5TonCharge__c,APTS_SettingPerHour__c,
+  APTS_StandByPrice__c,APTS_PilotCarPricePerTruck__c ,APTS_NightWeekendPricePerTruck__c,APTS_OverWeightLoadPricePerTruck__c,
+   from Apttus_Config2__LineItem__c where Apttus_Config2__ConfigurationId__c = :cartId  ]; 
+            
+            Map<id,Apttus_Config2__ProductAttributeValue__c> proattmap = new map<id,Apttus_Config2__ProductAttributeValue__c>();
+            for( Apttus_Config2__LineItem__c li : pli ) {
+             Apttus_Config2__ProductAttributeValue__c prodAtt  = new Apttus_Config2__ProductAttributeValue__c(Id = li.Apttus_Config2__AttributeValueId__c);
+             
+             
+                                prodAtt.APTS_BoomTruckCharge__c = li.APTS_BoomTruckCharge__c ;
+                                prodAtt.APTS_FlatBedCharge__c = li.APTS_FlatBedCharge__c ;
+                                prodAtt.APT_5TonCharge__c = li.APT_5TonCharge__c ;
+                                prodAtt.APTS_SettingPerHour__c = li.APTS_SettingPerHour__c ; 
+                                prodAtt.APTS_StandByPrice__c = li.APTS_StandByPrice__c ;
+                                prodAtt.APTS_PilotCarPricePerTruck__c = li.APTS_PilotCarPricePerTruck__c ;
+                                prodAtt.APTS_NightWeekendPricePerTruck__c = li.APTS_NightWeekendPricePerTruck__c ;
+                                prodAtt.APTS_OverWeightLoadPricePerTruck__c = li.APTS_OverWeightLoadPricePerTruck__c ;
+                                prodAtt.APTS_WideLoadPricePerTruck__c = li.APTS_WideLoadPricePerTruck__c ;
+             
+             proattmap.put(li.Apttus_Config2__AttributeValueId__c, prodAtt);
+                                }
+            }
+            freightLineItem[0].Apttus_Config2__BasePrice__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            freightLineItem[0].Apttus_Config2__BasePriceOverride__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            freightLineItem[0].Apttus_Config2__NetPrice__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            freightLineItem[0].Apttus_Config2__NetUnitPrice__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            freightLineItem[0].Apttus_Config2__ExtendedPrice__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            freightLineItem[0].Apttus_Config2__BaseExtendedPrice__c = freightLineItem[0].Apttus_Config2__ListPrice__c;
+            prodAttrValuesMap.get(freightLineItem[0].Apttus_Config2__AttributeValueId__c).APTS_Calculation_Type__c = 'Manual Distribution';
+        
+            //Commendted by Vineeth Raj
+          
+            //Database.SaveResult[] freightLineItemSaveResult = Database.update(freightLineItem);
+            //updating all line items(except options) with charges
+            Database.SaveResult[] freightLineItemSaveResult = Database.update(alllineitems);
+            
+             
+            
+            for (Database.SaveResult sr : freightLineItemSaveResult) {
+                if (sr.isSuccess()) {
+                    flag = true;                    
+                }
+                else {               
+                    flag = false;
+                }
+            }
+        }
+        Database.SaveResult[] freightAttrSaveResult = Database.update(prodAttrValuesMap.values());
+        for (Database.SaveResult sr : freightAttrSaveResult) {
+                if (sr.isSuccess()) {
+                    flag = true;                    
+                }
+                else {               
+                    flag = false;
+                }
+            }
+        Database.SaveResult[] lineitemsSaveResult = Database.update(originalMainLineItems);
+        for (Database.SaveResult sr : lineitemsSaveResult) {
+                if (sr.isSuccess()) {
+                    flag = true;                    
+                }
+                else {               
+                    flag = false;
+                }
+            }
+        Apttus_Proposal__Proposal__c quoteToUpdate = new Apttus_Proposal__Proposal__c(Id=quoteId);
+        quoteToUpdate.APTS_Output_With_Freight__c = true;
+        update quoteToUpdate;
+        if(flag)
+        {
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.severity.CONFIRM, 'Cart has been updated succesfully!'));
+        }
+        else
+        {
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.severity.ERROR, 'Update failed!'));
+        }
+        return null;
+    }
+    
+    public PageReference goToCart()
+    {
+        String url = '/apex/Apttus_Config2__Cart?configRequestId='+tempObjId+'&cartStatus='+cartStatus+'&id='+cartId+'&flow='+profileType+'#/cart';
+        PageReference cartPage = new PageReference(url);
+        //PageReference recordPage = new PageReference('/' + quoteId);
+        return cartPage;
+    }
+    
+    
+
+}

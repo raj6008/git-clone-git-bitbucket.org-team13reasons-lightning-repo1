@@ -1,0 +1,106 @@
+<aura:component controller="OnUpHoldButtonclass"  
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	
+    <aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+    
+    <lightning:button variant="brand" label="On Hold" onclick="{!c.updateCheck}"  />
+</aura:component>
+
+({
+    updateCheck : function(component, event, helper) {
+        var rid = component.get("v.recordId");
+        var action = component.get("c.onhold");
+        action.setParams({key : rid});
+        action.setCallback(this, function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                $A.get('e.force:refreshView').fire();
+            }
+            else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        console.log("Error message: " + 
+                                    errors[0].message);
+                    }
+                } 
+                else {
+                    console.log("Unknown Error");
+                }
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    isRefreshed: function(component, event, helper) {
+        location.reload();
+    },
+})
+
+
+
+public class OnUpHoldButtonclass {
+    @AuraEnabled  public boolean ValueOne {get;set;}
+    @AuraEnabled  public boolean ValueTwo{get;set;}
+    @AuraEnabled  public boolean ValueThree {get;set;}
+    @AuraEnabled public list<Apttus__APTS_Agreement__c> agmtlist {get;set;}
+    
+    
+    @AuraEnabled
+    public static void onhold(String key) {
+        Apttus__APTS_Agreement__c agmtlist =[select id,Apttus__Status__c,Apttus__Status_Category__c from Apttus__APTS_Agreement__c where id =: key];
+        
+        if(agmtlist.Apttus__Status__c =='Request Submitted' && agmtlist.Apttus__Status_Category__c=='Request'||agmtlist.Apttus__Status__c=='Author Contract' && agmtlist.Apttus__Status_Category__c=='In Authoring'||agmtlist.Apttus__Status__c=='Other Party Review' && agmtlist.Apttus__Status_Category__c=='In Authoring')
+        {
+            agmtlist.Apttus__Status__c = 'On Hold';
+            system.debug('status'+agmtlist.Apttus__Status__c );
+        }
+        update agmtlist;
+    }
+    
+    @AuraEnabled
+    public static void unhold(string key) {
+        Apttus__APTS_Agreement__c   agmtlist =[select id,Apttus__Status__c,Apttus__Status_Category__c from Apttus__APTS_Agreement__c  where id =:key];
+        if(agmtlist.Apttus__Status__c =='On Hold' && agmtlist.Apttus__Status_Category__c=='Request')
+        {
+            system.debug('agmtlist'+agmtlist.Apttus__Status__c);
+            agmtlist.Apttus__Status__c = 'Request Submitted';
+        }
+        else if (agmtlist.Apttus__Status__c =='On Hold' && agmtlist.Apttus__Status_Category__c=='In Authoring'){
+            
+            agmtlist.Apttus__Status__c = 'Author Contract';
+        }
+        update agmtlist;
+    }
+    @AuraEnabled
+    public static OnUpHoldButtonclass  initClass(string key  ) {
+        system.debug('key'+key);
+        OnUpHoldButtonclass obj = new OnUpHoldButtonclass();
+        
+        
+        obj.agmtlist =[select id,Apttus__Status__c,Apttus__Status_Category__c from Apttus__APTS_Agreement__c  where id =:key];
+        system.debug(' obj.agmtlist'+ obj.agmtlist);
+        if(   obj.agmtlist[0].Apttus__Status_Category__c =='Request')
+        {
+            system.debug('first condition'+  obj.agmtlist[0].Apttus__Status_Category__c);
+            obj.ValueOne =True ;
+        }
+        
+        else if (obj.agmtlist[0].Apttus__Status__c =='Language Approved'){ //&& obj.agmtlist[0].Apttus__Status_Category__c=='In Authoring'){
+            
+            obj.valueThree = True;
+            
+            system.debug('third condition'+ obj.agmtlist[0].Apttus__Status_Category__c);
+            system.debug('third condition'+ obj.agmtlist[0].Apttus__Status__c);
+            
+        } else if (obj.agmtlist[0].Apttus__Status_Category__c =='In Authoring'){
+            
+            obj.valueTwo =True;
+            
+            system.debug('second condition'+ obj.agmtlist[0].Apttus__Status_Category__c);
+            
+        }
+        return obj;
+    }
+}
+
